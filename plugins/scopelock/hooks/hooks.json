@@ -1,0 +1,59 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/scopelock-hook.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\scripts\\scopelock-hook.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Loading ScopeLock context"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/scopelock-hook.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\scripts\\scopelock-hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking ScopeLock boundary"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/scopelock-hook.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\scripts\\scopelock-hook.mjs\"",
+            "timeout": 12,
+            "statusMessage": "Comparing ScopeLock status"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$PLUGIN_ROOT/scripts/scopelock-hook.mjs\"",
+            "commandWindows": "node \"%PLUGIN_ROOT%\\scripts\\scopelock-hook.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking ScopeLock verification reminder"
+          }
+        ]
+      }
+    ]
+  }
+}

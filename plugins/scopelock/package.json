@@ -1,0 +1,15 @@
+{
+  "name": "scopelock",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check scripts/scopelock.mjs && node --check scripts/scopelock-hook.mjs && node --check demo/run-demo.mjs && node --check scripts/build-release.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "demo": "node demo/run-demo.mjs",
+    "build:release": "node scripts/build-release.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

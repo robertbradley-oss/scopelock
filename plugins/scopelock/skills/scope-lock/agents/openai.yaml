@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scope Lock"
+  short_description: "Create and manage an approved task boundary"
+  default_prompt: "Use $scope-lock to lock this task to the files I approve."

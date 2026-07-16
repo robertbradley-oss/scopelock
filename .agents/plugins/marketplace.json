@@ -1,0 +1,20 @@
+{
+  "name": "scopelock",
+  "interface": {
+    "displayName": "ScopeLock"
+  },
+  "plugins": [
+    {
+      "name": "scopelock",
+      "source": {
+        "source": "local",
+        "path": "./plugins/scopelock"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

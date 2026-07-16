@@ -1,0 +1,41 @@
+{
+  "name": "scopelock",
+  "version": "0.1.0",
+  "description": "Set an approved task boundary and detect repository changes that cross it.",
+  "author": {
+    "name": "RobertOS",
+    "url": "https://github.com/robertbradley-oss"
+  },
+  "homepage": "https://github.com/robertbradley-oss/scopelock",
+  "repository": "https://github.com/robertbradley-oss/scopelock",
+  "license": "MIT",
+  "keywords": [
+    "scope",
+    "git",
+    "change detection",
+    "developer productivity",
+    "local-first"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "ScopeLock",
+    "shortDescription": "Catch changes outside an approved task boundary",
+    "longDescription": "Create a local task boundary in a Git project, compare later repository state with the accepted baseline, and report in-scope, out-of-scope, pre-existing, amended, and uncertain changes honestly.",
+    "developerName": "RobertOS",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/robertbradley-oss/scopelock",
+    "privacyPolicyURL": "https://github.com/robertbradley-oss/scopelock/blob/main/plugins/scopelock/PRIVACY.md",
+    "defaultPrompt": [
+      "Lock this task to the files I approve.",
+      "Show whether this task is still within scope.",
+      "Verify this task against its ScopeLock boundary."
+    ],
+    "brandColor": "#65D4FF",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png"
+  }
+}

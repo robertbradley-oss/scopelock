@@ -1,0 +1,4 @@
+.codex-scope/
+dist/
+node_modules/
+*.log

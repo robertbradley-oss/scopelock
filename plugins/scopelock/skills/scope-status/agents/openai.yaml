@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scope Status"
+  short_description: "Check current changes against the active boundary"
+  default_prompt: "Use $scope-status to check whether this task is still within scope."
