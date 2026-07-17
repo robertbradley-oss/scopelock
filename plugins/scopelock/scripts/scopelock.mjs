@@ -1333,10 +1333,113 @@ function healthFromComparison(comparison) {
 }
 
 function recommendedStatusAction(comparison) {
-  if (["stale", "unavailable", "incomplete"].includes(comparison.state)) return "Reconcile the repository state and create a new Lock before relying on verification.";
-  if (comparison.findings.out_of_scope.length) return `Review the out-of-scope finding at ${comparison.findings.out_of_scope[0].path}.`;
-  if (comparison.findings.late_approved.length) return `Review the late-approved finding at ${comparison.findings.late_approved[0].path}.`;
-  return "Continue the task within the active boundary.";
+  if (["stale", "unavailable", "incomplete"].includes(comparison.state)) return "Create a new Lock before relying on this result.";
+  if (comparison.findings.out_of_scope.length) return `Review ${codeSpan(comparison.findings.out_of_scope[0].path)} before committing.`;
+  if (comparison.findings.late_approved.length) return `Review ${codeSpan(comparison.findings.late_approved[0].path)} before closing ScopeLock.`;
+  return "Continue the task.";
+}
+
+function joinPlainList(items) {
+  if (items.length <= 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
+}
+
+function pathList(findings, max = 3) {
+  return joinPlainList(findings.slice(0, max).map((finding) => codeSpan(finding.path)));
+}
+
+function unexpectedChangeLine(findings) {
+  if (findings.length === 1) return `1 unexpected file changed: ${codeSpan(findings[0].path)}.`;
+  if (findings.length <= 3) return `${findings.length} unexpected files changed: ${pathList(findings)}.`;
+  return `${findings.length} unexpected files changed, including ${pathList(findings)}.`;
+}
+
+function expectedChangeLine(findings, tense) {
+  if (findings.length === 0) return null;
+  if (findings.length === 1) return `1 task file ${tense === "past" ? "was" : "is"} within scope.`;
+  return `${findings.length} task files ${tense === "past" ? "were" : "are"} within scope.`;
+}
+
+function preExistingLine(findings) {
+  if (findings.length === 0) return null;
+  if (findings.length === 1) return `${codeSpan(findings[0].path)} was already changed before this task.`;
+  if (findings.length <= 3) return `${pathList(findings)} were already changed before this task.`;
+  return `${findings.length} files were already changed before this task.`;
+}
+
+function lateApprovedLine(findings) {
+  if (findings.length === 1) return `${codeSpan(findings[0].path)} was approved only after ScopeLock detected it.`;
+  return `${findings.length} files were approved only after ScopeLock detected them.`;
+}
+
+function uncertainLine(findings) {
+  if (findings.length === 1) return `ScopeLock could not confidently classify ${codeSpan(findings[0].path)}.`;
+  return `ScopeLock could not confidently classify ${findings.length} files.`;
+}
+
+function statusChecksLine(validationEvidence) {
+  if (validationEvidence.length === 0) return null;
+  if (validationEvidence.some((item) => item.result === "failed")) return "The last recorded checks failed.";
+  if (validationEvidence.some((item) => item.result === "unknown")) return "The required checks could not be confirmed.";
+  if (validationEvidence.some((item) => item.required && item.result === "not_run")) return "Required checks have not run yet.";
+  if (validationEvidence.every((item) => item.result === "passed")) return "The last recorded checks passed.";
+  return "The required checks are incomplete.";
+}
+
+function verifyChecksLine(validationEvidence) {
+  if (validationEvidence.length === 0) return null;
+  if (validationEvidence.some((item) => item.result === "failed")) return "Checks failed.";
+  if (validationEvidence.some((item) => item.result === "unknown")) return "Checks could not be confirmed.";
+  if (validationEvidence.some((item) => item.required && item.result === "not_run")) return "Required checks did not run.";
+  if (validationEvidence.every((item) => item.result === "passed")) return "Checks passed.";
+  return "Checks are incomplete.";
+}
+
+function scopeLines(comparison, tense) {
+  const findings = comparison.findings;
+  const expected = [...findings.in_scope, ...findings.approved_amendment];
+  const lines = [];
+  if (["stale", "unavailable", "incomplete"].includes(comparison.state)) {
+    lines.push("The repository no longer has enough trustworthy evidence for a complete scope check.");
+  } else if (findings.out_of_scope.length) {
+    lines.push(unexpectedChangeLine(findings.out_of_scope));
+    const expectedLine = expectedChangeLine(expected, tense);
+    if (expectedLine) lines.push(expectedLine);
+  } else if (findings.late_approved.length) {
+    lines.push(lateApprovedLine(findings.late_approved));
+    const expectedLine = expectedChangeLine(expected, tense);
+    if (expectedLine) lines.push(expectedLine);
+  } else if (findings.uncertain.length) {
+    lines.push(uncertainLine(findings.uncertain));
+    const expectedLine = expectedChangeLine(expected, tense);
+    if (expectedLine) lines.push(expectedLine);
+  } else if (expected.length) {
+    const expectedLine = expectedChangeLine(expected, tense);
+    lines.push(tense === "past"
+      ? expectedLine.replace(" within scope.", " inside the approved task.")
+      : expectedLine.replace(" within scope.", " inside the approved task."));
+  } else {
+    lines.push("No unexpected changes were found.");
+  }
+  const existingLine = preExistingLine(findings.pre_existing);
+  if (existingLine) lines.push(existingLine);
+  return lines;
+}
+
+function statusSummary(comparison, validationEvidence, nextAction) {
+  const headline = ["stale", "unavailable", "incomplete"].includes(comparison.state)
+    ? "Scope check is incomplete."
+    : healthFromComparison(comparison) === "attention"
+      ? "Scope needs attention."
+      : "Scope looks good.";
+  const lines = scopeLines(comparison, "present");
+  const checksLine = statusChecksLine(validationEvidence);
+  if (checksLine) lines.push(checksLine);
+  if (comparison.findings.out_of_scope.length || comparison.findings.late_approved.length) {
+    lines.push("ScopeLock only reports changes; it does not block them.");
+  }
+  return { headline, lines, next_action: nextAction };
 }
 
 async function inspectCommand(projectRoot) {
@@ -1545,13 +1648,19 @@ async function statusCommand(projectRoot) {
     active = await loadActive(projectRoot);
   } catch (error) {
     if (error instanceof ScopeLockError) {
+      const nextAction = "Review the local ScopeLock files before creating a new Lock.";
       return {
         schema: "scopelock/status/v1",
         result: "unavailable",
         health: "unavailable",
         error: { code: error.code, message: error.message },
+        summary: {
+          headline: "Scope check is unavailable.",
+          lines: ["ScopeLock could not read a trustworthy task boundary."],
+          next_action: nextAction,
+        },
         storage_written: false,
-        recommended_next_action: "Repair or replace the invalid Lock only after reviewing the project-local ScopeLock files.",
+        recommended_next_action: nextAction,
       };
     }
     throw error;
@@ -1561,17 +1670,26 @@ async function statusCommand(projectRoot) {
     comparison = await compareRepository(projectRoot, active);
   } catch (error) {
     if (error instanceof ScopeLockError) {
+      const nextAction = "Resolve the repository inspection issue and run Status again.";
       return {
         schema: "scopelock/status/v1",
         result: "unavailable",
         health: "unavailable",
         error: { code: error.code, message: error.message },
+        summary: {
+          headline: "Scope check is unavailable.",
+          lines: ["ScopeLock could not inspect the repository safely."],
+          next_action: nextAction,
+        },
         storage_written: false,
-        recommended_next_action: "Resolve the repository inspection issue before relying on ScopeLock status.",
+        recommended_next_action: nextAction,
       };
     }
     throw error;
   }
+  const validationEvidence = active.pointer.latest_report?.validation_evidence
+    ?? active.baseline.scope.validation_requirements.map((command) => ({ command, required: true, result: "not_run", exit_status: null }));
+  const recommendedNextAction = recommendedStatusAction(comparison);
   return {
     schema: "scopelock/status/v1",
     result: comparison.state === "comparable" ? "ok" : comparison.state,
@@ -1585,10 +1703,11 @@ async function statusCommand(projectRoot) {
     baseline_critical: comparison.baseline_critical.map((item) => ({ evidence: "verified", condition: item })),
     findings: comparison.findings,
     validation_requirements: active.baseline.scope.validation_requirements,
-    validation_evidence: active.pointer.latest_report?.validation_evidence ?? active.baseline.scope.validation_requirements.map((command) => ({ command, required: true, result: "not_run", exit_status: null })),
+    validation_evidence: validationEvidence,
     limitations: comparison.limitations,
+    summary: statusSummary(comparison, validationEvidence, recommendedNextAction),
     storage_written: false,
-    recommended_next_action: recommendedStatusAction(comparison),
+    recommended_next_action: recommendedNextAction,
   };
 }
 
@@ -1764,11 +1883,36 @@ function verificationOutcome(comparison, validationEvidence) {
 }
 
 function recommendedVerifyAction(outcome, comparison) {
-  if (outcome === "pass") return "Close the active Lock explicitly when you are satisfied the task is complete.";
-  if (outcome === "fail" && comparison.findings.out_of_scope.length) return `Review the out-of-scope finding at ${comparison.findings.out_of_scope[0].path}.`;
-  if (outcome === "fail") return "Fix the failed validation before closing the Lock.";
-  if (outcome === "warning") return "Review the warning before deciding whether to close the Lock.";
-  return "Resolve the missing or stale evidence and run verification again.";
+  if (outcome === "pass") return "Close ScopeLock when you are finished.";
+  if (outcome === "fail" && comparison.findings.out_of_scope.length) return `Review ${codeSpan(comparison.findings.out_of_scope[0].path)} before committing.`;
+  if (outcome === "fail") return "Fix the failed checks before closing ScopeLock.";
+  if (outcome === "warning") return "Review the warning before closing ScopeLock.";
+  return "Resolve the missing evidence and run Verify again.";
+}
+
+function verifySummary(outcome, comparison, validationEvidence, nextAction) {
+  const headline = {
+    pass: "Scope check passed.",
+    warning: "Scope check has a warning.",
+    fail: "Scope check failed.",
+    incomplete: "Scope check is incomplete.",
+  }[outcome];
+  const lines = scopeLines(comparison, "past");
+  const checksLine = verifyChecksLine(validationEvidence);
+  if (checksLine) {
+    const canCombine = comparison.findings.out_of_scope.length > 0
+      && ["Checks passed.", "Required checks did not run."].includes(checksLine);
+    if (canCombine) {
+      const scopeLine = lines.shift();
+      lines.unshift(`${checksLine.slice(0, -1)}, ${checksLine === "Checks passed." ? "but" : "and"} ${scopeLine[0].toLowerCase()}${scopeLine.slice(1)}`);
+    } else {
+      lines.unshift(checksLine);
+    }
+  }
+  if (comparison.findings.out_of_scope.length || comparison.findings.late_approved.length) {
+    lines.push("ScopeLock only reports changes; it does not block them.");
+  }
+  return { headline, lines, next_action: nextAction };
 }
 
 function reportFindingLines(findings) {
@@ -1776,12 +1920,13 @@ function reportFindingLines(findings) {
   return findings.map((finding) => `- [${finding.evidence}] ${codeSpan(finding.path)}: ${Array.isArray(finding.change) ? finding.change.join(", ") : finding.change}.`).join("\n");
 }
 
-function buildReport({ reportId, createdAt, active, comparison, validationEvidence, outcome, recommendedNextAction, repositoryChangedDuringValidation }) {
+function buildReport({ reportId, createdAt, active, comparison, validationEvidence, outcome, recommendedNextAction, repositoryChangedDuringValidation, summary }) {
   const f = comparison.findings;
   const validationLines = validationEvidence.length
     ? validationEvidence.map((item) => `- [verified] ${codeSpan(item.command)}: ${item.result}; exit ${item.exit_status ?? "unknown"}. ${sanitizeText(item.summary, 600)}`).join("\n")
     : "- [verified] No validation was required or authorized.";
-  return `---\nformat: "scopelock/report/v1"\nversion: 1\nreport_id: ${yamlString(reportId)}\nlock_id: ${yamlString(active.pointer.active_lock_id)}\ncreated_at: ${yamlString(createdAt)}\noutcome: ${yamlString(outcome)}\n---\n\n# ScopeLock Verification Report\n\n## Outcome\n\n- [verified] ${outcome}\n- [verified] ScopeLock detects and warns; it is not a sandbox.\n\n## Lock summary\n\n- [inferred] ${sanitizeText(active.baseline.scope.objective)}\n\n## Repository comparison\n\n- [verified] Comparison state: ${comparison.state}.\n- [verified] Repository changed during authorized validation: ${repositoryChangedDuringValidation}.\n${markdownLines(comparison.baseline_critical, "verified")}\n\n## Pre-existing findings\n\n${reportFindingLines(f.pre_existing)}\n\n## In-scope findings\n\n${reportFindingLines(f.in_scope)}\n\n## Out-of-scope findings\n\n${reportFindingLines(f.out_of_scope)}\n\n## Amendments and late approvals\n\n${reportFindingLines([...f.approved_amendment, ...f.late_approved])}\n\n## Uncertain findings\n\n${reportFindingLines(f.uncertain)}\n\n## Validation evidence\n\n${validationLines}\n\n## Limitations\n\n${markdownLines(comparison.limitations, "uncertain")}\n\n## Recommended next action\n\n- [inferred] ${sanitizeText(recommendedNextAction)}\n`;
+  const summaryLines = summary.lines.join("\n\n");
+  return `---\nformat: "scopelock/report/v1"\nversion: 1\nreport_id: ${yamlString(reportId)}\nlock_id: ${yamlString(active.pointer.active_lock_id)}\ncreated_at: ${yamlString(createdAt)}\noutcome: ${yamlString(outcome)}\n---\n\n# ScopeLock Verification Report\n\n## Quick summary\n\n**${summary.headline}**\n\n${summaryLines}\n\n**Next:** ${summary.next_action}\n\n## Outcome\n\n- [verified] ${outcome}\n- [verified] ScopeLock detects and warns; it is not a sandbox.\n\n## Lock summary\n\n- [inferred] ${sanitizeText(active.baseline.scope.objective)}\n\n## Repository comparison\n\n- [verified] Comparison state: ${comparison.state}.\n- [verified] Repository changed during authorized validation: ${repositoryChangedDuringValidation}.\n${markdownLines(comparison.baseline_critical, "verified")}\n\n## Pre-existing findings\n\n${reportFindingLines(f.pre_existing)}\n\n## In-scope findings\n\n${reportFindingLines(f.in_scope)}\n\n## Out-of-scope findings\n\n${reportFindingLines(f.out_of_scope)}\n\n## Amendments and late approvals\n\n${reportFindingLines([...f.approved_amendment, ...f.late_approved])}\n\n## Uncertain findings\n\n${reportFindingLines(f.uncertain)}\n\n## Validation evidence\n\n${validationLines}\n\n## Limitations\n\n${markdownLines(comparison.limitations, "uncertain")}\n\n## Recommended next action\n\n- [inferred] ${sanitizeText(recommendedNextAction)}\n`;
 }
 
 async function verifyCommand(projectRoot, input) {
@@ -1791,13 +1936,19 @@ async function verifyCommand(projectRoot, input) {
     active = await loadActive(projectRoot);
   } catch (error) {
     if (error instanceof ScopeLockError) {
+      const nextAction = "Review the local ScopeLock files before creating a new Lock.";
       return {
         schema: "scopelock/verify/v1",
         result: "incomplete",
         outcome: "incomplete",
         report_written: false,
         error: { code: error.code, message: error.message },
-        recommended_next_action: "Review the invalid ScopeLock storage before creating a new Lock.",
+        summary: {
+          headline: "Scope check is incomplete.",
+          lines: ["ScopeLock could not read a trustworthy task boundary."],
+          next_action: nextAction,
+        },
+        recommended_next_action: nextAction,
       };
     }
     throw error;
@@ -1823,10 +1974,11 @@ async function verifyCommand(projectRoot, input) {
   }
   const outcome = verificationOutcome(comparison, validationEvidence);
   const recommendedNextAction = recommendedVerifyAction(outcome, comparison);
+  const summary = verifySummary(outcome, comparison, validationEvidence, recommendedNextAction);
   const reportsPath = path.join(active.lockPath, "reports");
   const reportId = await allocateFileId(reportsPath, ".md");
   const createdAt = nowIso();
-  const report = buildReport({ reportId, createdAt, active, comparison, validationEvidence, outcome, recommendedNextAction, repositoryChangedDuringValidation });
+  const report = buildReport({ reportId, createdAt, active, comparison, validationEvidence, outcome, recommendedNextAction, repositoryChangedDuringValidation, summary });
   const reportPath = path.join(reportsPath, `${reportId}.md`);
   await writeExclusive(reportPath, report);
   const relativeReportPath = `reports/${reportId}.md`;
@@ -1851,6 +2003,7 @@ async function verifyCommand(projectRoot, input) {
     findings: comparison.findings,
     validation_evidence: validationEvidence,
     limitations: comparison.limitations,
+    summary,
     lock_state: "active",
     recommended_next_action: recommendedNextAction,
   };

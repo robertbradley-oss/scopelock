@@ -8,6 +8,14 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(HERE, "..");
 const manifest = JSON.parse(await readFile(path.join(PLUGIN_ROOT, ".codex-plugin", "plugin.json"), "utf8"));
+const args = process.argv.slice(2);
+if (!(args.length === 0 || (args.length === 2 && args[0] === "--marketplace-name"))) {
+  throw new Error("Usage: build-release.mjs [--marketplace-name <name>]");
+}
+const marketplaceName = args.length === 0 ? "scopelock" : args[1];
+if (!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(marketplaceName)) {
+  throw new Error("Marketplace name must use 1-64 lowercase letters, digits, or hyphens and cannot end with a hyphen.");
+}
 const distRoot = path.join(PLUGIN_ROOT, "dist");
 const stageRoot = path.join(distRoot, `scopelock-marketplace-${manifest.version}`);
 const pluginTarget = path.join(stageRoot, "plugins", manifest.name);
@@ -27,7 +35,7 @@ for (const entry of await readdir(PLUGIN_ROOT, { withFileTypes: true })) {
 
 await mkdir(path.join(stageRoot, ".agents", "plugins"), { recursive: true });
 const marketplace = {
-  name: "scopelock",
+  name: marketplaceName,
   interface: { displayName: "ScopeLock" },
   plugins: [
     {
@@ -56,4 +64,4 @@ for (const publicEntry of [
 }
 
 const resolvedStage = await realpath(stageRoot);
-process.stdout.write(`${JSON.stringify({ schema: "scopelock/release-build/v1", result: "built", version: manifest.version, marketplace_root: resolvedStage, plugin_path: path.join(resolvedStage, "plugins", manifest.name) })}\n`);
+process.stdout.write(`${JSON.stringify({ schema: "scopelock/release-build/v1", result: "built", version: manifest.version, marketplace_name: marketplaceName, marketplace_root: resolvedStage, plugin_path: path.join(resolvedStage, "plugins", manifest.name) })}\n`);

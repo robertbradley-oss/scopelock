@@ -47,6 +47,8 @@ node PLUGIN_ROOT/scripts/scopelock.mjs status --project-root .
 
 Returns `scopelock/status/v1`. This command is read-only.
 
+The response includes a deterministic `summary` object with `headline`, `lines`, and `next_action`. Skills should render that object by default and reserve the detailed findings for explicit detail requests.
+
 ### Context
 
 ```text
@@ -74,6 +76,8 @@ node PLUGIN_ROOT/scripts/scopelock.mjs verify --project-root .
 Standard-input shape: `{"authorized_commands":["npm test"]}`. An empty list runs no validation. Stored validation requirements never execute automatically.
 
 Returns `scopelock/verify/v1` and creates one immutable Markdown report. The active Lock remains active.
+
+The response includes the same plain `summary` shape as Status. The immutable report begins with that summary and retains all detailed evidence below it.
 
 ### Close or abandon
 

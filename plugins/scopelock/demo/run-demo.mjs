@@ -35,13 +35,10 @@ function heading(value) {
   process.stdout.write(`\n=== ${value} ===\n`);
 }
 
-function findingSummary(findings) {
-  return {
-    in_scope: findings.in_scope.map((item) => item.path),
-    out_of_scope: findings.out_of_scope.map((item) => item.path),
-    pre_existing: findings.pre_existing.map((item) => item.path),
-    uncertain: findings.uncertain.map((item) => item.path),
-  };
+function printSummary(summary) {
+  process.stdout.write(`${summary.headline}\n\n`);
+  process.stdout.write(`${summary.lines.join("\n")}\n\n`);
+  process.stdout.write(`Next: ${summary.next_action}\n`);
 }
 
 let projectRoot;
@@ -65,7 +62,9 @@ try {
     scope_source: "explicit",
     whole_project_explicit: false,
   });
-  process.stdout.write(`${JSON.stringify({ result: activated.result, lock_id: activated.lock_id, pre_existing_paths: activated.baseline.pre_existing_paths }, null, 2)}\n`);
+  process.stdout.write("ScopeLock is active for src/auth/ and tests/auth/.\n");
+  process.stdout.write(`It kept ${activated.baseline.pre_existing_paths} pre-existing files separate.\n`);
+  process.stdout.write("ScopeLock reports unexpected changes; it does not block them.\n");
 
   heading("2. Make one allowed change and one drift change");
   const loginPath = path.join(projectRoot, "src", "auth", "login.js");
@@ -79,11 +78,12 @@ try {
 
   heading("3. Status");
   const status = scope(projectRoot, "status");
-  process.stdout.write(`${JSON.stringify({ result: status.result, health: status.health, findings: findingSummary(status.findings), next: status.recommended_next_action }, null, 2)}\n`);
+  printSummary(status.summary);
 
   heading("4. Verify with separately authorized validation");
   const verified = scope(projectRoot, "verify", { authorized_commands: ["node --test"] });
-  process.stdout.write(`${JSON.stringify({ outcome: verified.outcome, report_path: verified.report_path, validation: verified.validation_evidence, next: verified.recommended_next_action }, null, 2)}\n`);
+  printSummary(verified.summary);
+  process.stdout.write("Detailed evidence was saved locally.\n");
 
   heading("Demo result");
   process.stdout.write("ScopeLock detected the out-of-scope configuration change and did not claim it was blocked.\n");

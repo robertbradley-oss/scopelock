@@ -67,11 +67,13 @@ ScopeLock is not:
 
 ## Evidence labels
 
-Every material conclusion uses one of these evidence classes:
+Every material conclusion in structured evidence and detailed reports uses one of these evidence classes:
 
 - `[verified]`: proven from the accepted baseline and current repository inspection.
 - `[inferred]`: derived from user intent or contextual interpretation, but not independently proven by repository evidence.
 - `[uncertain]`: evidence is missing, limited, stale, concurrent, or contradictory.
+
+The default user-facing summary intentionally omits this label syntax. It is generated deterministically from the same classified helper evidence, adds no inferred authorship, and keeps the labeled detail available on request.
 
 Path findings also use one of these categories:
 

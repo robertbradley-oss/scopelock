@@ -19,7 +19,7 @@ npm run build:release
 Add the staged marketplace using its absolute path:
 
 ```text
-codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.0
+codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.1
 codex plugin add scopelock@scopelock
 ```
 
@@ -83,4 +83,4 @@ Removing the plugin does not delete project-local `.codex-scope/` directories.
 
 ## Platform verification
 
-Windows is verified. Git Bash confirms the POSIX hook command and quoting. Linux and macOS filesystem, signal, and process semantics were not executed before `0.1.0`; the owner accepted this as a known release risk.
+Windows is verified. Git Bash confirms the POSIX hook command and quoting. Linux and macOS filesystem, signal, and process semantics remain unverified; the owner accepted this as a known release risk.

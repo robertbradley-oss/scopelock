@@ -2,6 +2,18 @@
 
 All notable changes to ScopeLock are documented in this file.
 
+## Unreleased
+
+## 0.1.1 - 2026-07-16
+
+### Changed
+
+- Status and Verify now return deterministic plain-language summaries for the default user experience.
+- Immutable Verify reports now begin with a short quick summary while retaining all labeled evidence and finding categories.
+- The Status and Verify skills hide Lock IDs, schemas, evidence taxonomy, and report paths by default and show them when details are requested.
+- The deterministic demo now presents the simplified summary instead of technical JSON.
+- The release builder accepts a validated marketplace name so local release candidates can be installed without colliding with the public marketplace.
+
 ## 0.1.0 - 2026-07-16
 
 ### Added

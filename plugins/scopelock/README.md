@@ -47,6 +47,8 @@ Are we still inside the scope I approved?
 
 Status is read-only. It compares the live Git state with the active Baseline and does not run tests, approve paths, or update evidence.
 
+The normal result is deliberately short: what looks right, what needs attention, what was already dirty, and one next action. Ask for details to see Lock IDs, evidence labels, matching rules, and the full categorized comparison.
+
 ### Verify
 
 Ask Codex:
@@ -56,6 +58,8 @@ Verify the task against its ScopeLock boundary.
 ```
 
 Verify creates an immutable report. Required commands are never treated as authorized merely because they appear in the Lock. Codex must show the exact command and receive separate approval before running it.
+
+Verify starts with the same plain-language summary while preserving the full labeled evidence in its local report.
 
 Verification does not close the Lock automatically.
 
@@ -108,7 +112,7 @@ For a local source build:
 
 ```text
 npm run build:release
-codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.0
+codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.1
 codex plugin add scopelock@scopelock
 ```
 

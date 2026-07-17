@@ -24,17 +24,18 @@ node PLUGIN_ROOT/scripts/scopelock.mjs status --project-root .
 
 ## Present the result
 
-Keep the normal result to one screen and use this order:
+Default to the helper's `summary` object. Render only this shape:
 
-1. Lock identity and objective
-2. Overall health
-3. Baseline-critical changes
-4. Pre-existing paths
-5. In-scope paths
-6. Out-of-scope paths
-7. Approved amendments and late approvals
-8. Uncertain paths
-9. Validation requirements and evidence
-10. Exactly one recommended next action
+```text
+**SUMMARY_HEADLINE**
 
-Use `[verified]`, `[inferred]`, and `[uncertain]` labels. State that ScopeLock detects and warns but is not a sandbox when an out-of-scope finding is present.
+SUMMARY_LINES
+
+**Next:** SUMMARY_NEXT_ACTION
+```
+
+- Copy `summary.headline`, each `summary.lines` entry, and `summary.next_action` without adding technical interpretation.
+- Keep the summary to a few plain sentences. Do not show the Lock ID, objective, evidence labels, category headings, raw JSON, schema names, rules, counts not already in `summary`, or contract path unless the user asks for details.
+- The summary may omit `[verified]`, `[inferred]`, and `[uncertain]` syntax because it is generated deterministically from the helper's classified evidence. Never remove those labels from a requested detailed view.
+- When the helper reports an out-of-scope or late-approved change, retain its plain warning that ScopeLock reports changes but does not block them.
+- If the user asks for details, then show the underlying categories, validation evidence, limitations, Lock identity, and exactly one recommended next action. Preserve every evidence label and never attribute authorship.

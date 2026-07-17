@@ -95,23 +95,42 @@ The MVP accepts only `repository_kind: "git"`. A non-Git project returns an unsu
 
 The helper returns sanitized relative paths only. It never returns file contents, diff hunks, environment values, credentials, or absolute user paths.
 
+## Plain summary object
+
+Status and Verify responses include a deterministic summary for the default user experience:
+
+```json
+{
+  "summary": {
+    "headline": "Scope check failed.",
+    "lines": [
+      "Checks passed, but 1 unexpected file changed: `config/prod.json`."
+    ],
+    "next_action": "Review `config/prod.json` before committing."
+  }
+}
+```
+
+The summary adds no authorship claims and does not replace categorized findings, validation evidence, or immutable report detail.
+
 ## Verification report format
 
 Format identifier: `scopelock/report/v1`
 
 Required sections:
 
-1. Outcome
-2. Lock summary
-3. Repository comparison
-4. Pre-existing findings
-5. In-scope findings
-6. Out-of-scope findings
-7. Amendments and late approvals
-8. Uncertain findings
-9. Validation evidence
-10. Limitations
-11. Recommended next action
+1. Quick summary
+2. Outcome
+3. Lock summary
+4. Repository comparison
+5. Pre-existing findings
+6. In-scope findings
+7. Out-of-scope findings
+8. Amendments and late approvals
+9. Uncertain findings
+10. Validation evidence
+11. Limitations
+12. Recommended next action
 
 Reports are immutable.
 

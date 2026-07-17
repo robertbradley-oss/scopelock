@@ -128,7 +128,7 @@ test("path grammar, matching, and sanitization are conservative", () => {
 test("plugin manifest and three skill packages have the required structure", async () => {
   const manifest = JSON.parse(await readFile(path.join(PLUGIN_ROOT, ".codex-plugin", "plugin.json"), "utf8"));
   assert.equal(manifest.name, "scopelock");
-  assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
+  assert.match(manifest.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/);
   assert.equal(manifest.skills, "./skills/");
   for (const field of ["displayName", "shortDescription", "longDescription", "developerName", "category", "capabilities", "defaultPrompt"]) {
     assert.ok(manifest.interface[field], `missing interface.${field}`);
@@ -224,6 +224,53 @@ test("dirty Baselines protect existing work and never store untracked contents",
     assert.ok(second.findings.out_of_scope.some((item) => item.path === "config/prod.json"));
     assert.ok(second.findings.pre_existing.some((item) => item.path === "notes/untracked.txt"));
     assert.ok(second.findings.pre_existing.some((item) => item.path === ".env" && item.evidence === "uncertain"));
+  } finally { await cleanup(root); }
+});
+
+test("Status and Verify provide an overly simple default summary without losing detailed evidence", async () => {
+  let root;
+  try {
+    root = await createRepo({ ...defaultFiles(), "README.md": "# Fixture\n" });
+    await write(root, "README.md", "# Fixture\n\nExisting documentation work.\n");
+    const command = `${JSON.stringify(process.execPath)} -e "process.exit(0)"`;
+    activate(root, { validation_requirements: [command] });
+    await write(root, "src/auth/login.js", "export const login = 'changed';\n");
+    await write(root, "tests/auth/login.test.js", "export const covered = 'changed';\n");
+    await write(root, "config/prod.json", "{\"mode\":\"changed\"}\n");
+
+    const status = run(root, "status").json;
+    assert.deepEqual(status.summary, {
+      headline: "Scope needs attention.",
+      lines: [
+        "1 unexpected file changed: `config/prod.json`.",
+        "2 task files are within scope.",
+        "`README.md` was already changed before this task.",
+        "Required checks have not run yet.",
+        "ScopeLock only reports changes; it does not block them.",
+      ],
+      next_action: "Review `config/prod.json` before committing.",
+    });
+    assert.ok(status.findings.pre_existing.some((item) => item.path === "README.md"));
+    assert.ok(status.findings.in_scope.some((item) => item.path === "src/auth/login.js"));
+    assert.ok(status.findings.out_of_scope.some((item) => item.path === "config/prod.json"));
+
+    const verified = run(root, "verify", { input: { authorized_commands: [command] } }).json;
+    assert.equal(verified.outcome, "fail");
+    assert.deepEqual(verified.summary, {
+      headline: "Scope check failed.",
+      lines: [
+        "Checks passed, but 1 unexpected file changed: `config/prod.json`.",
+        "2 task files were within scope.",
+        "`README.md` was already changed before this task.",
+        "ScopeLock only reports changes; it does not block them.",
+      ],
+      next_action: "Review `config/prod.json` before committing.",
+    });
+    const report = await readFile(path.join(root, ...verified.report_path.split("/")), "utf8");
+    assert.match(report, /## Quick summary/);
+    assert.match(report, /\*\*Scope check failed\.\*\*/);
+    assert.match(report, /Checks passed, but 1 unexpected file changed: `config\/prod\.json`\./);
+    assert.match(report, /## Out-of-scope findings\n\n- \[verified\] `config\/prod\.json`/);
   } finally { await cleanup(root); }
 });
 

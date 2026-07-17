@@ -1,4 +1,4 @@
 interface:
   display_name: "Scope Verify"
-  short_description: "Create an evidence-based task scope report"
+  short_description: "Get a simple result with detailed local evidence"
   default_prompt: "Use $scope-verify to verify this task against its approved boundary."

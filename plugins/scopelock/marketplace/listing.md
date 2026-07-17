@@ -4,7 +4,7 @@
 
 - Name: ScopeLock
 - Plugin ID: `scopelock`
-- Version: `0.1.0`
+- Version: `0.1.1`
 - Developer: RobertOS
 - Category: Productivity
 - Brand color: `#65D4FF`
@@ -42,4 +42,4 @@ ScopeLock creates a local task boundary in a Git project, compares later reposit
 
 ## Known limitation statement
 
-ScopeLock detects and warns. It does not prevent every write. Windows is verified; true Linux and macOS execution remains unverified for `0.1.0` by owner decision.
+ScopeLock detects and warns. It does not prevent every write. Windows is verified; true Linux and macOS execution remains unverified by owner decision.

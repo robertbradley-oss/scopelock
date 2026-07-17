@@ -83,18 +83,13 @@ Status is read-only. It does not update the Baseline, approve findings, run test
 - Verify -> Verification result
 - Inspect a reported path -> Outside ScopeLock
 
-Content order:
+Default presentation:
 
-1. Lock and repository identity
-2. Overall health
-3. Baseline-critical changes
-4. Pre-existing paths
-5. New in-scope paths
-6. New out-of-scope paths
-7. Approved amendments
-8. Uncertain paths
-9. Validation evidence
-10. One recommended next action
+1. One plain-language headline
+2. A few helper-generated summary sentences
+3. One recommended next action
+
+Lock identity, evidence labels, category detail, rules, and validation records remain available when the user asks for details.
 
 Failure paths:
 
@@ -162,13 +157,8 @@ Validation rules:
 
 Content:
 
-- Outcome: pass, warning, fail, or incomplete
-- Repository comparison
-- Committed, staged, unstaged, deleted, renamed, and untracked changes since the Baseline
-- Findings grouped by category
-- Validation evidence
-- Limitations
-- Exactly one recommended next action
+- Default: one plain-language outcome, a few helper-generated summary sentences, and exactly one recommended next action
+- On request: repository comparison; committed, staged, unstaged, deleted, renamed, and untracked changes; categorized findings; validation evidence; limitations; and the local report path
 
 Verify writes an immutable report but does not close the Lock automatically.
 
