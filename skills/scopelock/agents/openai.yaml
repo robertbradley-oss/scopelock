@@ -1,0 +1,7 @@
+interface:
+  display_name: "ScopeLock"
+  short_description: "Lock, inspect, or verify an approved scope"
+  default_prompt: "Use $scopelock to manage or check this task's approved boundary."
+
+policy:
+  allow_implicit_invocation: true
