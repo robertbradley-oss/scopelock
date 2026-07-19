@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "check": "node --check scripts/scopelock.mjs && node --check scripts/scopelock-hook.mjs && node --check demo/run-demo.mjs && node --check scripts/build-release.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "check:performance": "node --check benchmarks/fixtures.mjs && node --check benchmarks/equivalence.mjs && node --check benchmarks/scopelock-performance.mjs && node --check benchmarks/qualification.mjs",
+    "test": "npm run test:core",
+    "test:core": "node --test tests/hooks.test.mjs tests/scopelock.test.mjs",
+    "test:performance": "node --test --test-concurrency=1 tests/performance-fixtures.test.mjs tests/performance-equivalence.test.mjs tests/performance-measurement.test.mjs tests/performance-qualification.test.mjs",
     "demo": "node demo/run-demo.mjs",
     "build:release": "node scripts/build-release.mjs"
   },

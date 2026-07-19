@@ -2,69 +2,70 @@
 
 ## Outcome
 
-Reduce ScopeLock's user-visible runtime overhead, especially the hooks that run around tool calls, without weakening its evidence model, security boundaries, advisory-only behavior, or compatibility with active Locks in other projects.
+Finish ScopeLock 0.1.1 as a clean, verified release candidate, then carry the user-approved reserved-sideband compatibility change into the next ScopeLock release without reopening the stopped performance workstream.
 
-The performance work succeeds when repeatable cross-platform benchmarks show materially lower latency, the normalized Status findings and evidence remain equivalent, the adversarial fixture matrix passes, no new timeout failures appear, and the optimized path can be introduced gradually with a straightforward rollback.
+Finalization succeeds when development-only benchmark tooling is excluded from the staged plugin, repository checks and representative local workflows pass, the built package contains only intended release material, QA introduces no unexpected workspace changes, and the candidate is ready for a separate explicit commit or publish decision.
+
+The next-release work succeeds when the preserved reserved-sideband patch is reapplied in canonical source under a fresh task boundary, its `scopelock/context/v2` compatibility and package version are reconciled explicitly, Clean Handoff interoperability passes, and the change receives separate release evidence.
 
 ## Strategy
 
 Proceed evidence-first and in increasing order of behavioral risk:
 
-1. Establish a repeatable benchmark matrix and record the current baseline.
-2. Remove unnecessary hook work before changing repository-comparison semantics.
-3. Consolidate repeated repository metadata probes and stable captures while preserving concurrent-change detection.
-4. Optimize boundary inspection and tracked-file hashing only after profiling shows their contribution.
-5. Release the optimized path through an opt-in flag or prerelease, compare it with the current implementation, and canary it in selected projects before general adoption.
-
-Favor intra-invocation work reduction over cross-invocation caching. Cross-invocation caches are deferred until there is evidence they are necessary and can remain trustworthy when repositories change concurrently.
+1. Freeze ScopeLock runtime and user-facing behavior at the established 0.1.1 baseline.
+2. Separate repository development assets from the staged plugin so performance benchmarks and tests remain available to maintainers without shipping to users.
+3. Run repository-native hygiene, syntax, automated tests, deterministic demo, release build, and package inspection in that order.
+4. Review the complete candidate diff and staged package for unintended files, secrets, generated artifacts, or version/documentation inconsistencies.
+5. Stop with a verified release candidate and require explicit authorization before staging, committing, publishing, installing, or deploying it.
+6. After the 0.1.1 candidate decision, begin a separate next-release slice from a stable baseline, reapply the approved reserved-sideband patch, choose the compatible package version explicitly, and rerun cross-repository compatibility evidence.
 
 ## Guardrails
 
-- Do not change ScopeLock runtime behavior until the benchmark specification, fixture matrix, and recoverable Git baseline exist.
-- Preserve the current stored ScopeLock schema during the initial performance work.
-- Preserve normalized Status findings, evidence classifications, warnings, and failure behavior unless the user explicitly approves a product change.
+- Do not change ScopeLock runtime behavior, stored schemas, findings, evidence labels, warnings, hooks, or failure behavior inside the frozen 0.1.1 candidate.
 - Preserve secret-path exclusions, the rule against reading or hashing untracked contents, symlink and repository-boundary protections, hostile-Git defenses, and concurrent-change detection.
 - ScopeLock remains advisory: it detects and warns but does not claim to prevent every write.
-- Do not silently roll changes into projects already using ScopeLock; use an opt-in flag, prerelease, or similarly reversible canary.
-- Require zero new timeout failures and no security or adversarial-test regression.
-- Target at least a 50% reduction in medium-repository PostToolUse latency before broad rollout; set absolute p50 and p95 budgets only after the cross-platform baseline exists.
-- Keep benchmark artifacts concise and reproducible; do not add production telemetry or networked runtime components.
+- Do not resume full performance qualification, set performance budgets, or implement runtime optimization during this phase.
+- Keep benchmark code, performance tests, partial result artifacts, and local handoff material out of the staged release plugin.
+- Use only local, deterministic validation; do not access accounts, production systems, paid services, or networked release targets.
+- Treat reserved-sideband as approved next-release work, not as an unapproved change, while keeping it out of the frozen 0.1.1 candidate until that candidate's commit decision is resolved.
+- Reapply and validate next-release work only in canonical source repositories under a fresh ScopeLock; never edit an installed plugin cache.
 - Preserve unrelated workspace changes and do not commit, stage, reset, clean, or publish without explicit authorization.
 
 ## Workstreams
 
-1. **Benchmarking and budgets** - Cover clean, dirty, untracked-heavy, large-file, nested-repository, shallow-clone, and submodule scenarios at representative repository sizes. Record p50, p95, Git subprocess count, bytes hashed, and timeout rate on Windows, Linux, and macOS.
-2. **Hook fast paths** - Avoid repository discovery and context loading for hook events that cannot produce a warning. Remove the redundant context-helper call from PostToolUse when equivalent behavior can be preserved.
-3. **Capture consolidation** - Compute repository metadata once per invocation and reduce the ordinary stable comparison from three full captures to two without losing race detection.
-4. **Filesystem and hashing** - Profile boundary checks, introduce carefully bounded hashing concurrency or aggregate budgets if justified, and retain all safety limitations and evidence semantics.
-5. **Compatibility and rollout** - Compare normalized old/new output across the adversarial fixture matrix, canary in selected projects, document rollback, and broaden adoption only after the performance and equivalence gates pass.
+1. **Release scope and packaging** - Keep maintainer-only benchmarks, tests, handoff evidence, and temporary output outside the staged plugin while preserving required runtime skills, scripts, references, assets, and documentation.
+2. **Quality assurance** - Exercise repository hygiene, syntax checks, automated tests, and relevant security/privacy invariants using declared local commands.
+3. **Product smoke** - Run the deterministic demo and inspect its ordinary Lock, Status, and Verify behavior without changing product semantics.
+4. **Release candidate** - Build and inspect the staged marketplace, verify versions and release documentation, compare Git state before and after QA, and hand off for explicit commit or publish approval.
+5. **Next-release compatibility** - Reapply the approved reserved-sideband patch after the 0.1.1 decision, reconcile the context and package versions, and prove ScopeLock and Clean Handoff interoperability without weakening ordinary findings.
 
 ## Current State
 
 ### Completed
 
-- Completed the read-only performance review and isolated Windows baseline. The dominant candidate hot path is repeated synchronous Git and helper-process work in `scripts/scopelock.mjs` and `scripts/scopelock-hook.mjs`; the measured medium fixture put direct Status and PostToolUse above one second. Evidence: source inspection, `tests/scopelock.test.mjs`, and the benchmark recorded in the 2026-07-18 performance-review task.
-- Locked the evidence-first performance strategy, safety guardrails, sequencing, compatibility gates, and staged rollout approach in this canonical plan.
-- Established the reviewed initial repository baseline after excluding local Clean Handoff checkpoints, scanning the commit candidate for secret indicators and unwanted artifacts, passing the syntax gate, and passing the Windows fixture suite with only its expected POSIX-only skip. Evidence: the initial Git commit and the validation output from the 2026-07-18 baseline task.
+- Established the ScopeLock 0.1.1 runtime, documentation, deterministic demo, release builder, and reviewed Git baseline. Evidence: commit `ceab256`, `README.md`, `RELEASE_NOTES.md`, and the existing core test suite.
+- Completed the performance review and dependency-free benchmark tooling through Phase 4 qualification support without changing runtime code. The costly three-platform qualification was stopped incomplete by user decision; valid partial Windows evidence remains local. Evidence: `docs/performance-benchmark-plan.md`, `benchmarks/`, `tests/performance-*.test.mjs`, and `.codex-handoff/artifacts/phase4-windows-20260718-interrupted/`.
+- Completed ScopeLock 0.1.1 release finalization and Candidate Recovery: the builder excludes maintainer-only assets, the reserved-sideband source change is preserved outside the frozen candidate, default `check` and `test` gates are core-only while performance commands remain explicit and opt-in, core QA and the deterministic demo passed, the staged package was inspected, and local marketplace documentation was corrected. Evidence: `package.json`, `.codex-handoff/artifacts/candidate-recovery-20260719/README.md`, its sibling `reserved-sideband.patch`, `README.md`, `docs/installation.md`, and the staged package produced by `scripts/build-release.mjs`.
+- Staged the reviewed ScopeLock 0.1.1 source candidate without `.codex-handoff` and created one local finalization commit; publishing was not performed.
 
 ### Active
 
-- No runtime optimization is underway. The project is ready for the benchmark specification and fixture matrix.
+- ScopeLock 0.1.1 Finalization is complete and committed locally. Publishing remains a separate explicit decision.
+- Reserved-sideband is approved for the next ScopeLock release. Its eight-file source change is not currently applied to the 0.1.1 candidate; the recoverable patch remains at `.codex-handoff/artifacts/candidate-recovery-20260719/reserved-sideband.patch` pending the separate next-release slice.
 
 ### Blocked
 
-- None.
+- Performance qualification remains intentionally stopped and was not run during Candidate Recovery.
+- Publishing remains intentionally approval-gated.
+- Next-release reapplication remains separate from the committed 0.1.1 line so the compatibility change cannot be confused with or silently folded into that release.
 
 ## Next Move
 
-Draft `docs/performance-benchmark-plan.md` without changing runtime code. It should define the repository-size and drift scenarios, Windows/Linux/macOS execution matrix, p50 and p95 methodology, Git-process and hashing measurements, equivalence oracle, interim 50% improvement gate, and the evidence required before hook optimization begins. Completion evidence is an approved specification that another agent can implement without reopening strategy.
+Explicitly approve or reject publishing the committed ScopeLock 0.1.1 release. Keep the reserved-sideband next-release slice separate until that release decision is resolved.
 
 ## Open Questions
 
-- What absolute p50 and p95 latency budgets should govern small, medium, and large repositories after Windows, Linux, and macOS baselines are available?
-- Should the canary use an environment-controlled capture path, a separate prerelease package, or both?
-- Which one or two active projects are appropriate canary candidates?
-- How large should the aggregate tracked-file hashing budget be before evidence becomes explicitly limited?
+- Which package version should carry the already-approved `scopelock/context/v2` compatibility boundary after 0.1.1 is resolved?
 
 ## Decisions
 
@@ -73,16 +74,31 @@ Draft `docs/performance-benchmark-plan.md` without changing runtime code. It sho
 - 2026-07-18 - Require a repeatable cross-platform benchmark matrix and a recoverable Git baseline before runtime changes.
 - 2026-07-18 - Use a relative rollout gate of at least 50% lower medium-repository PostToolUse latency with zero new timeouts until cross-platform evidence supports absolute budgets.
 - 2026-07-18 - Prefer reversible opt-in or prerelease canaries over silently updating projects that already depend on ScopeLock.
+- 2026-07-18 - Approve `docs/performance-benchmark-plan.md`, including its scenarios, repetition counts, three-operating-system baseline gate, equivalence oracle, temporary diagnostic instrumentation, and interim 50% PostToolUse p95 target; this unblocks benchmark-harness implementation but not runtime optimization.
+- 2026-07-18 - Govern implementation through named, completion-gated phases rather than isolated steps; this keeps each body of work coherent and preserves an explicit evidence review before advancing.
+- 2026-07-18 - Approve Phase 2 as the measurement-engine phase, with equivalence, diagnostic attribution, cross-platform qualification, budget setting, and runtime optimization reserved for later approval gates.
+- 2026-07-18 - Approve Phase 3 as the equivalence-and-diagnostic-attribution phase, while preserving unmodified helpers for primary latency measurements and reserving cross-platform qualification, budgets, and runtime optimization for later gates.
+- 2026-07-18 - Approve Phase 4 as baseline qualification, while keeping runtime optimization and budget approval gated on complete Windows, Linux, and macOS evidence.
+- 2026-07-19 - Retain the Phase 4 qualification files after review because they implement required performance-evidence gates and do not affect ScopeLock runtime latency; no separate recovery or resumability tooling was approved or implemented.
+- 2026-07-19 - Stop Phase 4 incomplete because the remaining Windows, Linux, and macOS qualification cost is not worthwhile. Preserve the valid partial Windows evidence, do not advance to budgets or optimization under the unmet gate, and require an explicit decision to reopen the work.
+- 2026-07-19 - Start the ScopeLock 0.1.1 Finalization Phase with runtime frozen, performance work stopped, benchmark tooling retained for maintainers but excluded from the staged plugin, and commit or publish reserved for separate approval.
+- 2026-07-19 - Do not approve the then-current staged package as the 0.1.1 candidate because concurrent `reserved-sideband` runtime/schema edits appeared during QA and the repository-wide test command was red; preserve all changes and stop before cleanup, staging, commit, or publish. Partially superseded on 2026-07-19: reserved-sideband is now explicitly approved for the next release, but remains excluded from 0.1.1.
+- 2026-07-19 - Complete Candidate Recovery by preserving the eight-file `reserved-sideband` patch outside the release, restoring the frozen `ceab256` runtime boundary, and accepting core-only QA as the finalization test scope; do not resume performance work.
+- 2026-07-19 - Keep the candidate unapproved until the two documented local marketplace paths match the versioned directory produced by the builder.
+- 2026-07-19 - Complete Finalization after correcting both local marketplace paths and passing the lightweight build/path verification; retain explicit approval gates for commit and publish.
+- 2026-07-19 - Approve reserved-sideband as next-release work rather than an unplanned change. Preserve the frozen 0.1.1 candidate, reuse the recovery patch only after the 0.1.1 decision, and require an explicit compatible package version plus fresh cross-repository evidence.
+- 2026-07-19 - Keep ScopeLock's default `npm run check` and `npm test` release gates core-only; retain performance checks and tests as explicit maintainer commands so the stopped performance workstream cannot run implicitly.
+- 2026-07-19 - Approve staging the reviewed ScopeLock 0.1.1 source candidate without `.codex-handoff` and creating one local commit; keep publishing as a separate decision.
 
 ## Refresh Triggers
 
-- Cross-platform measurements identify a different dominant bottleneck than repeated Git captures and helper processes.
-- A proposed optimization changes findings, evidence classifications, stored data, security boundaries, or concurrent-change behavior.
-- The 50% latency target proves unrealistic or insufficient after representative benchmarks.
-- Canary projects show timeout, correctness, compatibility, or workflow regressions.
-- A new ScopeLock release or repository architecture materially changes the reviewed hot path.
-- The user explicitly revises the outcome, strategy, guardrails, or rollout tolerance.
+- QA reports a runtime, security, privacy, packaging, documentation, or release-build failure.
+- The staged plugin contains development-only files or omits a required runtime asset.
+- QA creates unexpected tracked changes or leaves local processes or temporary artifacts behind.
+- The user explicitly changes the release target, version, scope, or authorization boundary.
+- The selected post-0.1.1 package version cannot safely represent the `scopelock/context/v2` compatibility boundary.
+- Clean Handoff compatibility evidence differs from the preserved reserved-sideband patch or reveals a weakened ordinary finding.
 
 ## Last Refreshed
 
-2026-07-18 - Advanced from baseline creation to benchmark specification after the secret and artifact audit, syntax validation, Windows fixture run, and initial repository commit approved in this task.
+2026-07-19 - Committed the reviewed ScopeLock 0.1.1 candidate locally without `.codex-handoff`, retained the publishing gate, and kept reserved-sideband isolated as next-release work.

@@ -19,7 +19,16 @@ if (!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(marketplaceName)) {
 const distRoot = path.join(PLUGIN_ROOT, "dist");
 const stageRoot = path.join(distRoot, `scopelock-marketplace-${manifest.version}`);
 const pluginTarget = path.join(stageRoot, "plugins", manifest.name);
-const exclusions = new Set([".git", ".codex-handoff", ".codex-scope", "dist", "node_modules"]);
+const exclusions = new Set([
+  ".git",
+  ".codex-handoff",
+  ".codex-scope",
+  "benchmarks",
+  "dist",
+  "GAMEPLAN.md",
+  "node_modules",
+  "tests",
+]);
 
 const relativeStage = path.relative(PLUGIN_ROOT, stageRoot);
 if (relativeStage.startsWith("..") || path.isAbsolute(relativeStage) || !relativeStage.startsWith(`dist${path.sep}`)) {

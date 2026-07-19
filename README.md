@@ -112,7 +112,7 @@ For a local source build:
 
 ```text
 npm run build:release
-codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.1
+codex plugin marketplace add <absolute-path-to>/dist/scopelock-marketplace-0.1.1+codex.20260717130011
 codex plugin add scopelock@scopelock
 ```
 
