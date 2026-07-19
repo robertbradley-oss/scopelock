@@ -4,6 +4,18 @@ All notable changes to ScopeLock are documented in this file.
 
 ## Unreleased
 
+## 0.2.0 - 2026-07-19
+
+### Changed
+
+- The packaged context operation now returns `scopelock/context/v2` and always includes the authoritative `scopelock/reserved-sideband/v1` classification.
+- `.agentreceipt/`, `.codex-handoff/`, and `.codex-scope/` are reported separately as shared reserved sideband instead of ordinary implementation findings.
+- Runtime and hook classification preserve existing forbidden, allowed, amendment, and default-deny behavior for every non-reserved path.
+
+### Compatibility
+
+- `scopelock/context/v2` is a breaking schema transition. Consumers that require `scopelock/context/v1` must update before using this release.
+
 ## 0.1.1 - 2026-07-16
 
 ### Changed

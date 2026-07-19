@@ -23,7 +23,7 @@ Properties:
 - Expansion-only amendments and reports use exclusive create-new writes.
 - `active.json` is the only replaceable coordination file.
 - Unknown files under `.codex-scope/` are preserved.
-- ScopeLock excludes its own storage from repository scope findings.
+- ScopeLock reports its own storage under the shared reserved-sideband classification rather than as implementation work.
 - ScopeLock never edits `.gitignore` automatically.
 
 ## Lock contract format
@@ -95,6 +95,28 @@ The MVP accepts only `repository_kind: "git"`. A non-Git project returns an unsu
 
 The helper returns sanitized relative paths only. It never returns file contents, diff hunks, environment values, credentials, or absolute user paths.
 
+## Packaged context format
+
+Format identifier: `scopelock/context/v2`
+
+Every inactive, active, or unavailable result contains this authoritative classification object:
+
+```json
+{
+  "reserved_sideband": {
+    "schema": "scopelock/reserved-sideband/v1",
+    "classification": "reserved-sideband",
+    "rules": [
+      { "path": ".agentreceipt/", "match": "directory" },
+      { "path": ".codex-handoff/", "match": "directory" },
+      { "path": ".codex-scope/", "match": "directory" }
+    ]
+  }
+}
+```
+
+The schema and complete rule set are versioned as one compatibility boundary. Consumers fail closed when either schema is missing, malformed, or unsupported.
+
 ## Plain summary object
 
 Status and Verify responses include a deterministic summary for the default user experience:
@@ -124,13 +146,14 @@ Required sections:
 3. Lock summary
 4. Repository comparison
 5. Pre-existing findings
-6. In-scope findings
-7. Out-of-scope findings
-8. Amendments and late approvals
-9. Uncertain findings
-10. Validation evidence
-11. Limitations
-12. Recommended next action
+6. Reserved sideband findings
+7. In-scope findings
+8. Out-of-scope findings
+9. Amendments and late approvals
+10. Uncertain findings
+11. Validation evidence
+12. Limitations
+13. Recommended next action
 
 Reports are immutable.
 
@@ -175,7 +198,13 @@ The MVP does not support `*`, `**`, brace expansion, regular expressions, Git pa
 3. Allowed rule
 4. Out-of-scope by default
 
-`.codex-scope/` is internally excluded from findings but is never added to the user's allowed source scope.
+Before forbidden and allowed rules, ScopeLock applies the packaged `scopelock/reserved-sideband/v1` classification to these exact directory roots:
+
+- `.agentreceipt/`
+- `.codex-handoff/`
+- `.codex-scope/`
+
+Matching paths are reported as `reserved-sideband`. They are not added to the user's allowed source scope and cannot be reclassified by a forbidden rule, allowed rule, or amendment. Ordinary paths continue through the existing forbidden, allowed, amendment, and default-deny precedence unchanged.
 
 ## Baseline evidence policy
 

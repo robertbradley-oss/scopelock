@@ -182,7 +182,7 @@ function extractPatchPaths(command, projectRoot) {
         break;
       }
     }
-    if (!candidate || candidate === ".codex-scope" || candidate.startsWith(".codex-scope/")) continue;
+    if (!candidate) continue;
     const key = comparable(candidate);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -202,6 +202,10 @@ function ruleMatches(rule, projectPath) {
 }
 
 function classifyPath(context, projectPath) {
+  const reservedSideband = context.reserved_sideband?.rules?.find((rule) => ruleMatches(rule, projectPath));
+  if (reservedSideband) {
+    return { category: "reserved-sideband", reason: `reserved by ${reservedSideband.path}` };
+  }
   const forbidden = context.forbidden.find((rule) => ruleMatches(rule, projectPath));
   if (forbidden) return { category: "out-of-scope", reason: `forbidden by ${forbidden.path}` };
   const allowed = context.effective_allowed.find((rule) => ruleMatches(rule, projectPath));

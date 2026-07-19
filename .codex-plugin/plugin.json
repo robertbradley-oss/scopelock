@@ -1,6 +1,6 @@
 {
   "name": "scopelock",
-  "version": "0.1.1+codex.20260717130011",
+  "version": "0.2.0+codex.20260719234815",
   "description": "Set an approved task boundary and detect repository changes that cross it.",
   "author": {
     "name": "RobertOS",

@@ -171,6 +171,10 @@ test("non-Git and inferred proposals create no storage", async () => {
     assert.equal(activate(nonGit).json.result, "unsupported");
     await assert.rejects(readFile(path.join(nonGit, ".codex-scope", "active.json")));
     repo = await createRepo();
+    const inactiveContext = run(repo, "context").json;
+    assert.equal(inactiveContext.schema, "scopelock/context/v2");
+    assert.equal(inactiveContext.result, "inactive");
+    assert.equal(inactiveContext.reserved_sideband.schema, "scopelock/reserved-sideband/v1");
     const proposal = activate(repo, { scope_source: "inferred" }).json;
     assert.equal(proposal.result, "confirmation_required");
     assert.equal(proposal.storage_written, false);
@@ -204,6 +208,56 @@ test("Lock and Status preserve source files and classify clean changes", async (
     assert.ok(status.findings.out_of_scope.some((item) => item.path === "config/prod.json"));
     assert.equal(status.findings.out_of_scope.find((item) => item.path === "src/auth/secrets/key.js").rule, "src/auth/secrets/");
     assert.equal(status.storage_written, false);
+  } finally { await cleanup(root); }
+});
+
+test("packaged context and findings classify shared reserved sideband separately", async () => {
+  let root;
+  try {
+    root = await createRepo({ ...defaultFiles(), ".agentreceipt/existing.json": "{}\n" });
+    await write(root, ".agentreceipt/existing.json", "{\"state\":\"existing\"}\n");
+    activate(root);
+
+    const context = run(root, "context").json;
+    assert.equal(context.schema, "scopelock/context/v2");
+    assert.deepEqual(context.reserved_sideband, {
+      schema: "scopelock/reserved-sideband/v1",
+      classification: "reserved-sideband",
+      rules: [
+        { path: ".agentreceipt/", match: "directory" },
+        { path: ".codex-handoff/", match: "directory" },
+        { path: ".codex-scope/", match: "directory" },
+      ],
+    });
+
+    await write(root, ".agentreceipt/receipt.json", "{}\n");
+    await write(root, ".codex-handoff/latest.md", "# Handoff\n");
+    await write(root, ".codex-scope/tool-owned.json", "{}\n");
+    await write(root, "src/auth/login.js", "export const login = 'changed';\n");
+    await write(root, "config/prod.json", "{\"mode\":\"changed\"}\n");
+
+    const status = run(root, "status").json;
+    for (const reservedRoot of [".agentreceipt/", ".codex-handoff/", ".codex-scope/"]) {
+      assert.ok(
+        status.findings.reserved_sideband.some((item) => item.path.startsWith(reservedRoot)),
+        reservedRoot,
+      );
+      for (const category of ["pre_existing", "in_scope", "out_of_scope", "approved_amendment", "late_approved", "uncertain"]) {
+        assert.equal(
+          status.findings[category].some((item) => item.path.startsWith(reservedRoot)),
+          false,
+          `${reservedRoot} leaked into ${category}`,
+        );
+      }
+    }
+    assert.ok(status.findings.in_scope.some((item) => item.path === "src/auth/login.js"));
+    assert.ok(status.findings.out_of_scope.some((item) => item.path === "config/prod.json"));
+
+    const verified = run(root, "verify", { input: { authorized_commands: [] } }).json;
+    assert.ok(verified.findings.reserved_sideband.length >= 3);
+    const report = await readFile(path.join(root, ...verified.report_path.split("/")), "utf8");
+    assert.match(report, /## Reserved sideband findings/);
+    assert.match(report, /`\.codex-handoff\/latest\.md`/);
   } finally { await cleanup(root); }
 });
 

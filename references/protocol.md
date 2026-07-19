@@ -55,7 +55,7 @@ The response includes a deterministic `summary` object with `headline`, `lines`,
 node PLUGIN_ROOT/scripts/scopelock.mjs context --project-root .
 ```
 
-Returns `scopelock/context/v1`. This lightweight read-only command validates active storage and returns the active objective, effective rules, constraints, validation requirements, and latest report summary. The optional hook handler uses it before deciding whether an advisory message is relevant.
+Returns `scopelock/context/v2`. Every result includes the authoritative `scopelock/reserved-sideband/v1` classification for `.agentreceipt/`, `.codex-handoff/`, and `.codex-scope/`. An active result also returns the objective, effective rules, constraints, validation requirements, and latest report summary. Consumers must fail closed for missing, malformed, or unsupported context and reserved-sideband schemas. The optional hook handler uses this context before deciding whether an advisory message is relevant.
 
 ### Amend
 

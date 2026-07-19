@@ -21,6 +21,13 @@ import { fileURLToPath } from "node:url";
 
 const STORAGE_NAME = ".codex-scope";
 const INTERNAL_PREFIX = ".codex-scope/";
+const CONTEXT_SCHEMA = "scopelock/context/v2";
+const RESERVED_SIDEBAND_SCHEMA = "scopelock/reserved-sideband/v1";
+const RESERVED_SIDEBAND_RULES = Object.freeze([
+  Object.freeze({ path: ".agentreceipt/", match: "directory" }),
+  Object.freeze({ path: ".codex-handoff/", match: "directory" }),
+  Object.freeze({ path: ".codex-scope/", match: "directory" }),
+]);
 const MAX_JSON_BYTES = 1024 * 1024;
 const MAX_GIT_BYTES = 64 * 1024 * 1024;
 const MAX_TRACKED_HASH_BYTES = 64 * 1024 * 1024;
@@ -381,7 +388,7 @@ function parsePorcelainV2(buffer, repositoryInfo) {
 
     const projectPath = normalizeGitPath(observation.rawPath, repositoryInfo);
     const oldPath = observation.rawOldPath ? normalizeGitPath(observation.rawOldPath, repositoryInfo) : null;
-    if (!projectPath || projectPath === STORAGE_NAME || projectPath.startsWith(INTERNAL_PREFIX)) {
+    if (!projectPath) {
       if (!projectPath && observation.rawPath) limitations.push("unsafe-or-outside-project-path-omitted");
       continue;
     }
@@ -1148,6 +1155,10 @@ async function loadActive(projectRoot, { requireActive = true } = {}) {
 }
 
 function classifyByRules(projectPath, baseline, amendments) {
+  const reservedSideband = reservedSidebandRule(projectPath);
+  if (reservedSideband) {
+    return { category: "reserved-sideband", rule: reservedSideband.path, source: RESERVED_SIDEBAND_SCHEMA };
+  }
   const forbidden = baseline.scope.forbidden.find((rule) => ruleMatches(rule, projectPath));
   if (forbidden) return { category: "out-of-scope", rule: forbidden.path, source: "forbidden" };
   const initialAllowed = baseline.scope.allowed.find((rule) => ruleMatches(rule, projectPath));
@@ -1163,6 +1174,18 @@ function classifyByRules(projectPath, baseline, amendments) {
 
 function comparableScopePath(value) {
   return IS_WINDOWS ? value.toLowerCase() : value;
+}
+
+function reservedSidebandRule(projectPath) {
+  return RESERVED_SIDEBAND_RULES.find((rule) => ruleMatches(rule, projectPath)) ?? null;
+}
+
+function publicReservedSideband() {
+  return {
+    schema: RESERVED_SIDEBAND_SCHEMA,
+    classification: "reserved-sideband",
+    rules: RESERVED_SIDEBAND_RULES.map((rule) => ({ ...rule })),
+  };
 }
 
 function observationSignature(observation) {
@@ -1196,7 +1219,7 @@ function historyCompatibility(projectRoot, baselineRepository, currentRepository
 }
 
 function addEvent(eventMap, event) {
-  if (!event.path || event.path === STORAGE_NAME || event.path.startsWith(INTERNAL_PREFIX)) return;
+  if (!event.path) return;
   const key = comparableScopePath(event.path);
   const existing = eventMap.get(key);
   if (!existing) {
@@ -1218,7 +1241,7 @@ async function compareRepository(projectRoot, active) {
   const baseline = active.baseline;
   const safeFingerprintPaths = new Set(
     baseline.pre_existing
-      .filter((item) => item.kind === "tracked" && !isSensitivePath(item.path))
+      .filter((item) => item.kind === "tracked" && !isSensitivePath(item.path) && !reservedSidebandRule(item.path))
       .map((item) => item.path),
   );
   const current = await captureRepository(projectRoot, safeFingerprintPaths, { fingerprintCurrentTracked: true });
@@ -1291,7 +1314,19 @@ async function compareRepository(projectRoot, active) {
   }
 
   const findings = emptyFindings();
-  findings.pre_existing = preExisting.sort((a, b) => a.path.localeCompare(b.path));
+  for (const finding of preExisting.sort((a, b) => a.path.localeCompare(b.path))) {
+    const reservedSideband = reservedSidebandRule(finding.path);
+    if (reservedSideband) {
+      findings.reserved_sideband.push({
+        ...finding,
+        category: "reserved-sideband",
+        rule: reservedSideband.path,
+        source: RESERVED_SIDEBAND_SCHEMA,
+      });
+    } else {
+      findings.pre_existing.push(finding);
+    }
+  }
   for (const event of [...eventMap.values()].sort((a, b) => a.path.localeCompare(b.path))) {
     const classification = classifyByRules(event.path, baseline, active.amendments);
     const finding = {
@@ -1317,7 +1352,7 @@ async function compareRepository(projectRoot, active) {
 }
 
 function emptyFindings() {
-  return { pre_existing: [], in_scope: [], out_of_scope: [], approved_amendment: [], late_approved: [], uncertain: [] };
+  return { pre_existing: [], reserved_sideband: [], in_scope: [], out_of_scope: [], approved_amendment: [], late_approved: [], uncertain: [] };
 }
 
 function categoryKey(category) {
@@ -1521,7 +1556,7 @@ async function activateCommand(projectRoot, input) {
   if (capture.concurrent) throw new ScopeLockError("concurrent-repository-change", "The repository changed repeatedly during Baseline capture; no Lock was activated.");
   const baselineFingerprintPaths = new Set(
     capture.observations
-      .filter((item) => item.kind === "tracked" && !isSensitivePath(item.path))
+      .filter((item) => item.kind === "tracked" && !isSensitivePath(item.path) && !reservedSidebandRule(item.path))
       .map((item) => item.path),
   );
   if (baselineFingerprintPaths.size > 0) {
@@ -1718,16 +1753,18 @@ async function contextCommand(projectRoot) {
   } catch (error) {
     if (error instanceof ScopeLockError && error.code === "no-storage") {
       return {
-        schema: "scopelock/context/v1",
+        schema: CONTEXT_SCHEMA,
         result: "inactive",
         state: "none",
+        reserved_sideband: publicReservedSideband(),
       };
     }
     if (error instanceof ScopeLockError) {
       return {
-        schema: "scopelock/context/v1",
+        schema: CONTEXT_SCHEMA,
         result: "unavailable",
         state: "unknown",
+        reserved_sideband: publicReservedSideband(),
         error: { code: error.code, message: error.message },
       };
     }
@@ -1736,10 +1773,11 @@ async function contextCommand(projectRoot) {
 
   if (active.pointer.state !== "active") {
     return {
-      schema: "scopelock/context/v1",
+      schema: CONTEXT_SCHEMA,
       result: "inactive",
       state: active.pointer.state,
       lock_id: active.pointer.active_lock_id,
+      reserved_sideband: publicReservedSideband(),
     };
   }
 
@@ -1756,10 +1794,11 @@ async function contextCommand(projectRoot) {
   }
 
   return {
-    schema: "scopelock/context/v1",
+    schema: CONTEXT_SCHEMA,
     result: "active",
     state: "active",
     lock_id: active.pointer.active_lock_id,
+    reserved_sideband: publicReservedSideband(),
     objective: active.baseline.scope.objective,
     allowed: active.baseline.scope.allowed,
     effective_allowed: effectiveAllowed,
@@ -1926,7 +1965,7 @@ function buildReport({ reportId, createdAt, active, comparison, validationEviden
     ? validationEvidence.map((item) => `- [verified] ${codeSpan(item.command)}: ${item.result}; exit ${item.exit_status ?? "unknown"}. ${sanitizeText(item.summary, 600)}`).join("\n")
     : "- [verified] No validation was required or authorized.";
   const summaryLines = summary.lines.join("\n\n");
-  return `---\nformat: "scopelock/report/v1"\nversion: 1\nreport_id: ${yamlString(reportId)}\nlock_id: ${yamlString(active.pointer.active_lock_id)}\ncreated_at: ${yamlString(createdAt)}\noutcome: ${yamlString(outcome)}\n---\n\n# ScopeLock Verification Report\n\n## Quick summary\n\n**${summary.headline}**\n\n${summaryLines}\n\n**Next:** ${summary.next_action}\n\n## Outcome\n\n- [verified] ${outcome}\n- [verified] ScopeLock detects and warns; it is not a sandbox.\n\n## Lock summary\n\n- [inferred] ${sanitizeText(active.baseline.scope.objective)}\n\n## Repository comparison\n\n- [verified] Comparison state: ${comparison.state}.\n- [verified] Repository changed during authorized validation: ${repositoryChangedDuringValidation}.\n${markdownLines(comparison.baseline_critical, "verified")}\n\n## Pre-existing findings\n\n${reportFindingLines(f.pre_existing)}\n\n## In-scope findings\n\n${reportFindingLines(f.in_scope)}\n\n## Out-of-scope findings\n\n${reportFindingLines(f.out_of_scope)}\n\n## Amendments and late approvals\n\n${reportFindingLines([...f.approved_amendment, ...f.late_approved])}\n\n## Uncertain findings\n\n${reportFindingLines(f.uncertain)}\n\n## Validation evidence\n\n${validationLines}\n\n## Limitations\n\n${markdownLines(comparison.limitations, "uncertain")}\n\n## Recommended next action\n\n- [inferred] ${sanitizeText(recommendedNextAction)}\n`;
+  return `---\nformat: "scopelock/report/v1"\nversion: 1\nreport_id: ${yamlString(reportId)}\nlock_id: ${yamlString(active.pointer.active_lock_id)}\ncreated_at: ${yamlString(createdAt)}\noutcome: ${yamlString(outcome)}\n---\n\n# ScopeLock Verification Report\n\n## Quick summary\n\n**${summary.headline}**\n\n${summaryLines}\n\n**Next:** ${summary.next_action}\n\n## Outcome\n\n- [verified] ${outcome}\n- [verified] ScopeLock detects and warns; it is not a sandbox.\n\n## Lock summary\n\n- [inferred] ${sanitizeText(active.baseline.scope.objective)}\n\n## Repository comparison\n\n- [verified] Comparison state: ${comparison.state}.\n- [verified] Repository changed during authorized validation: ${repositoryChangedDuringValidation}.\n${markdownLines(comparison.baseline_critical, "verified")}\n\n## Pre-existing findings\n\n${reportFindingLines(f.pre_existing)}\n\n## Reserved sideband findings\n\n${reportFindingLines(f.reserved_sideband)}\n\n## In-scope findings\n\n${reportFindingLines(f.in_scope)}\n\n## Out-of-scope findings\n\n${reportFindingLines(f.out_of_scope)}\n\n## Amendments and late approvals\n\n${reportFindingLines([...f.approved_amendment, ...f.late_approved])}\n\n## Uncertain findings\n\n${reportFindingLines(f.uncertain)}\n\n## Validation evidence\n\n${validationLines}\n\n## Limitations\n\n${markdownLines(comparison.limitations, "uncertain")}\n\n## Recommended next action\n\n- [inferred] ${sanitizeText(recommendedNextAction)}\n`;
 }
 
 async function verifyCommand(projectRoot, input) {

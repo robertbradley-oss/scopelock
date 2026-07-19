@@ -16,7 +16,7 @@ Reject absolute paths, drive-qualified paths, UNC paths, empty paths, NUL bytes,
 
 Normalize repeated separators and `.` segments. Match case-insensitively on Windows and case-sensitively on other platforms. Reject an existing symlink, junction, or reparse target that resolves outside the project root.
 
-`.codex-scope/` is internal storage. It is excluded from findings and is never part of user-approved source scope.
+The packaged `scopelock/reserved-sideband/v1` contract classifies `.agentreceipt/`, `.codex-handoff/`, and `.codex-scope/` as reserved tool-owned sideband. These roots are reported separately as `reserved-sideband`; they are never treated as user-approved source scope and never become ordinary in-scope, out-of-scope, late-approved, or pre-existing implementation findings.
 
 ## Amendments
 

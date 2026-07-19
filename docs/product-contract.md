@@ -78,6 +78,7 @@ The default user-facing summary intentionally omits this label syntax. It is gen
 Path findings also use one of these categories:
 
 - `pre-existing`
+- `reserved-sideband`
 - `in-scope`
 - `out-of-scope`
 - `approved-amendment`
@@ -85,6 +86,8 @@ Path findings also use one of these categories:
 - `uncertain`
 
 ScopeLock never converts user intent into repository fact and never attributes a change to Codex when another writer could have caused it.
+
+`reserved-sideband` is defined by the packaged `scopelock/reserved-sideband/v1` contract. It identifies `.agentreceipt/`, `.codex-handoff/`, and `.codex-scope/` as shared tool-owned state without adding those roots to user-approved source scope or weakening findings for ordinary paths.
 
 ## Product principles
 

@@ -134,9 +134,21 @@ test("patch path extraction and classification are conservative", () => {
   );
   assert.deepEqual(paths, ["src/auth/login.js", "config/new.json"]);
   const context = {
+    reserved_sideband: {
+      schema: "scopelock/reserved-sideband/v1",
+      classification: "reserved-sideband",
+      rules: [
+        { path: ".agentreceipt/", match: "directory" },
+        { path: ".codex-handoff/", match: "directory" },
+        { path: ".codex-scope/", match: "directory" },
+      ],
+    },
     effective_allowed: [{ path: "src/auth/", match: "directory" }],
     forbidden: [{ path: "src/auth/secrets/", match: "directory" }],
   };
+  assert.equal(classifyPath(context, ".agentreceipt/receipt.json").category, "reserved-sideband");
+  assert.equal(classifyPath(context, ".codex-handoff/latest.md").category, "reserved-sideband");
+  assert.equal(classifyPath(context, ".codex-scope/active.json").category, "reserved-sideband");
   assert.equal(classifyPath(context, "src/auth/login.js").category, "in-scope");
   assert.equal(classifyPath(context, "src/auth/secrets/key.js").category, "out-of-scope");
   assert.equal(classifyPath(context, "config/new.json").category, "out-of-scope");
@@ -195,6 +207,21 @@ test("PreToolUse warns only for proven direct apply_patch paths and never blocks
       tool_input: { command: "*** Begin Patch\n*** Update File: src/auth/login.js\n*** End Patch" },
     });
     assert.deepEqual(inside, {});
+
+    for (const reservedPath of [
+      ".agentreceipt/receipt.json",
+      ".codex-handoff/latest.md",
+      ".codex-scope/tool-owned.json",
+    ]) {
+      const reserved = runHook(root, {
+        hook_event_name: "PreToolUse",
+        turn_id: `turn-reserved-${reservedPath}`,
+        tool_name: "apply_patch",
+        tool_use_id: `tool-reserved-${reservedPath}`,
+        tool_input: { command: `*** Begin Patch\n*** Add File: ${reservedPath}\n+{}\n*** End Patch` },
+      });
+      assert.deepEqual(reserved, {}, reservedPath);
+    }
 
     const shell = runHook(root, {
       hook_event_name: "PreToolUse",
