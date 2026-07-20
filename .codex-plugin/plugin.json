@@ -28,7 +28,7 @@
       "Write"
     ],
     "websiteURL": "https://github.com/robertbradley-oss/scopelock",
-    "privacyPolicyURL": "https://github.com/robertbradley-oss/scopelock/blob/main/plugins/scopelock/PRIVACY.md",
+    "privacyPolicyURL": "https://github.com/robertbradley-oss/scopelock/blob/main/PRIVACY.md",
     "defaultPrompt": [
       "Lock this task to the files I approve.",
       "Show whether this task is still within scope.",
