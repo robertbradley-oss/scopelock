@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Finish and publish ScopeLock 0.1.1, then carry the user-approved reserved-sideband compatibility change into ScopeLock 0.2.0 without reopening the stopped performance workstream.
+Completed: ScopeLock 0.1.1 was finalized and published, then the user-approved reserved-sideband compatibility change was implemented, validated, and published in ScopeLock 0.2.0 without reopening the stopped performance workstream.
 
 Finalization succeeds when development-only benchmark tooling is excluded from the staged plugin, repository checks and representative local workflows pass, the built package contains only intended release material, QA introduces no unexpected workspace changes, and the candidate is ready for a separate explicit commit or publish decision.
 
@@ -46,29 +46,25 @@ Proceed evidence-first and in increasing order of behavioral risk:
 - Established the ScopeLock 0.1.1 runtime, documentation, deterministic demo, release builder, and reviewed Git baseline. Evidence: commit `ceab256`, `README.md`, `RELEASE_NOTES.md`, and the existing core test suite.
 - Completed the performance review and dependency-free benchmark tooling through Phase 4 qualification support without changing runtime code. The costly three-platform qualification was stopped incomplete by user decision; valid partial Windows evidence remains local. Evidence: `docs/performance-benchmark-plan.md`, `benchmarks/`, `tests/performance-*.test.mjs`, and `.codex-handoff/artifacts/phase4-windows-20260718-interrupted/`.
 - Completed and published ScopeLock 0.1.1: Candidate Recovery preserved reserved-sideband outside the release, default gates remain core-only, QA and packaging passed, public history was reconciled without force-pushing, and the verified build-metadata release was published. Evidence: commit `d098e43`, reconciliation commit `183bc3e`, tag `v0.1.1+codex.20260717130011`, the GitHub release, and `.codex-handoff/artifacts/candidate-recovery-20260719/`.
-- Completed ScopeLock 0.2.0 implementation and locked finalization locally: builder hardening is committed in `35ada27`; `scopelock/context/v2`, the authoritative reserved-sideband contract, ordinary-finding protections, tests, manifests, and release documentation are committed in `faa87b1`; Clean Handoff's compatible consumer is committed in `6095a8a`; the public privacy-policy path is corrected; core QA passed with the accepted late-approval warning; and Lock `2026-07-19T163332Z` is closed with evidence retained at `.codex-scope/locks/2026-07-19T163332Z/reports/2026-07-20T032943Z.md`. Commit and publication of the final administrative correction remain incomplete.
+- Completed and published ScopeLock 0.2.0: builder hardening is committed in `35ada27`; `scopelock/context/v2`, the authoritative reserved-sideband contract, ordinary-finding protections, tests, manifests, and release documentation are committed in `faa87b1`; Clean Handoff's compatible consumer is committed in `6095a8a`; the public privacy-policy path and final GamePlan state are committed in `0b90b21`; core QA passed with the accepted late-approval warning; Lock `2026-07-19T163332Z` is closed with evidence retained at `.codex-scope/locks/2026-07-19T163332Z/reports/2026-07-20T032943Z.md`; and the committed-HEAD package inspection passed before publication. Evidence: tag `v0.2.0+codex.20260719234815` and the GitHub release.
 
 ### Active
 
-- ScopeLock 0.1.1 is complete and published. Public `origin/main` remains at reconciliation commit `183bc3e`, and the build-metadata tag resolves to approved release commit `d098e43`.
-- ScopeLock 0.2.0 is a verified local release candidate at `0.2.0+codex.20260719234815`. Local `main` is two commits ahead of `origin/main`: builder hardening `35ada27` followed by reserved-sideband implementation and lifecycle commit `faa87b1`.
-- The five lifecycle files are retained honestly as late-approved history. The final `npm run check` and `npm test` Verify run passed without repository drift; its warning was accepted and Lock `2026-07-19T163332Z` was explicitly closed.
-- `.codex-plugin/plugin.json` now points to the tracked root `PRIVACY.md`, and this administrative GamePlan refresh records the final state. These two tracked worktree changes are not yet committed.
-- The committed release builder deterministically stages intended plugin and public material from committed `HEAD` while excluding benchmarks, tests, performance planning, GamePlan, handoff, ScopeLock storage, dependencies, and build output; packaged commands remain limited to `check` and `demo`. Evidence: `scripts/build-release.mjs` at `35ada27`.
+- No ScopeLock release work remains active under this plan.
+- Local `main`, public `origin/main`, and the published build-metadata tag resolve to final candidate commit `0b90b21`; ScopeLock 0.2.0 is the latest public GitHub release and is neither a draft nor a prerelease.
+- `.codex-handoff/` remains preserved as untracked local sideband and was not included in either release.
 
 ### Blocked
 
-- Staging and committing the final `.codex-plugin/plugin.json` correction and `GAMEPLAN.md` refresh require explicit approval; `.codex-handoff/` remains excluded.
-- Pushing the completed local candidate, creating the `v0.2.0+codex.20260719234815` tag, and publishing the release remain separately approval-gated.
-- Performance qualification remains intentionally stopped and is not a completion requirement for the next-release compatibility slice unless the user explicitly reopens it.
+- None. The stopped performance qualification is an accepted scope decision, not a blocker or completion requirement.
 
 ## Next Move
 
-Approve a ScopeLock 0.2.0 Candidate Commit Phase that stages exactly `.codex-plugin/plugin.json` and `GAMEPLAN.md`, excludes `.codex-handoff/`, and creates one local finalization commit while keeping publishing separate.
+This locked plan is complete. Do not resume ScopeLock release or performance work under it; any future initiative requires a new explicit plan and scope boundary.
 
 ## Open Questions
 
-- Whether to publish the finalized `0.2.0+codex.20260719234815` candidate after its local administrative commit remains explicitly approval-gated.
+- The proposed future GamePlan “lock this in” capability remains a separate, unapproved initiative. It may reuse stabilized ScopeLock concepts, but it is not part of this completed plan.
 
 ## Decisions
 
@@ -101,6 +97,7 @@ Approve a ScopeLock 0.2.0 Candidate Commit Phase that stages exactly `.codex-plu
 - 2026-07-19 - Abandon Lock `2026-07-19T162901Z` and activate final Lock `2026-07-19T163332Z` at `35ada27`, preserving the committed builder resolution as pre-existing work and keeping reserved-sideband implementation, builder publishing, and performance work separately gated.
 - 2026-07-19 - Record `faa87b1` as the local ScopeLock 0.2.0 implementation, version, and release-documentation candidate, while withholding final Lock acceptance because five lifecycle files remain outside the active boundary and required validation has no immutable Verify evidence; do not publish or resume performance work. Superseded on 2026-07-19 after the five files were explicitly late-approved, final core QA passed, and the Lock was closed with its historical warning preserved.
 - 2026-07-19 - Correct `.codex-plugin/plugin.json` to use the tracked root `PRIVACY.md`, rerun only `npm run check` and `npm test` through ScopeLock Verify, accept the retained late-approval warning, and close Lock `2026-07-19T163332Z`; keep the final administrative commit and all publishing separately approval-gated.
+- 2026-07-19 - Publish final candidate commit `0b90b21` by fast-forwarding public `main`, creating annotated tag `v0.2.0+codex.20260719234815`, and publishing the non-draft, non-prerelease GitHub release; declare every locked ScopeLock 0.1.1 and 0.2.0 workstream complete while leaving performance stopped and future GamePlan integration outside this plan.
 
 ## Refresh Triggers
 
@@ -113,4 +110,4 @@ Approve a ScopeLock 0.2.0 Candidate Commit Phase that stages exactly `.codex-plu
 
 ## Last Refreshed
 
-2026-07-19 - Recorded the corrected privacy-policy URL, passed final core QA, accepted late-approval history, closed Lock `2026-07-19T163332Z`, and reduced the remaining ScopeLock 0.2.0 work to the explicitly gated administrative commit and later publishing decision.
+2026-07-19 - Marked the locked plan complete after verifying published commit `0b90b21`, tag `v0.2.0+codex.20260719234815`, the latest public GitHub release, the closed Lock and retained QA evidence, aligned local and remote `main`, preserved `.codex-handoff/`, and no remaining active or blocked work.
