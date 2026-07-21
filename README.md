@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **Archived — ScopeLock's beneficial approval-boundary and verification capabilities have been absorbed into [GamePlan](https://github.com/robertbradley-oss/game-plan).**
+>
+> This repository remains available for historical and compatibility purposes. Do not use it for new work.
+
 <p align="center">
   <img src="assets/logo.png" alt="ScopeLock" width="720">
 </p>
